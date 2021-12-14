@@ -2,7 +2,7 @@
 Repository for simulating and reconstructing lensless digital in-line holographic microscopy (DIHM) data
 ## Contents
 - MSHoloSim.m - engine for simulating a set of lensless digital in-line holographic microscopy (DIHM) holograms with respect to multiple scattering for a group of microbeads with given 4D (space + time) locations and diameters
-- DarkTrack.m - algorithm for reconstructing the 4D (space + time) location of objects/particles present in input set of DIHM holograms and the extended depth of focus (EDOF) reconstruction
+- DarkTrack.m - algorithm for reconstructing the 4D (space + time) location of objects/particles present in input set of DIHM holograms. Additionally it performs the extended depth of focus (EDOF) reconstruction (with all objects moved to the focus plane and minimized twin-image effect)
 - UsageExample.m - script that demonstrates how to use the MSHoloSim and DarkTrack algorithms. Requires exemplary data to run (see below)
 
 ## Exemplary data
