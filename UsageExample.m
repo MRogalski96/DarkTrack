@@ -5,14 +5,17 @@
 % reconstructing the objects locations from the set of DIHM holograms.
 % 
 % List of contents
-% 1. Simulating and reconstructing a single hologram
-% 2. Simulating a set of holograms and using DarkTrack to recover objects
-%    4D positions
+% 1. Simulating hologram with MSHoloSim and reconstructing with AS method
+% 2. Simulating a set of holograms by MSHoloSim and using DarkTrack to 
+%    recover objects 4D positions
 % 3. Using DarkTrack to recover simulated data (spiral microbead) object 4D 
 %    positions
 % 4. Using DarkTrack to recover real data objects (human sperm) 4D
 %    positions
 %
+% Exemplary datasets, that are used in 2., 3. and 4., may be downloaded at:
+% https://drive.google.com/drive/folders/1UNtZ3IeEX5ms_Vx85b0S685D-uipLe_l?usp=sharing
+% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Created by:
 %   Mikołaj Rogalski,
@@ -20,7 +23,7 @@
 %   Institute of Micromechanics and Photonics,
 %   Warsaw University of Technology, 02-525 Warsaw, Poland
 %
-% Last modified: 03.11.2021
+% Last modified: 09.06.2022
 % 
 % See the https://github.com/MRogalski96/DarkTrack for more info
 % 
@@ -30,12 +33,12 @@
 % dark-field for holographic 4D particle tracking under Gabor regime." 
 % 2021. Submitted
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% 1. Simulating and reconstructing a single hologram
+%% 1. Simulating hologram with MSHoloSim and reconstructing with AS method
 clear
 close all
 clc
 
-% System parameters
+% System parameters (see MSHoloSim.m for description)
 opts.n = [1.002, 1];
 opts.A = 50; % (%)
 opts.mag = 13;
@@ -45,6 +48,7 @@ opts.lambda = 0.66; %(um)
 opts.SNR = 20;
 opts.imSize = 500; % (pix)
 opts.b_sig = 0.4;
+opts.ZF = 10; % in case of out of memory error increase the ZF parameter
 
 % Simulating X,Y,Z positions of five microbeads (one in image center and
 % four in corners) at differend distances from detector (Z+opts.dist*1000)
@@ -54,12 +58,12 @@ Y = [100; 400; 250; 100; 400]*dx; % (um)
 Z = [50; -50; 0; -50; 50]; % (um)
 
 % Microbeads diameters
-D = [5; 8; 6; 4; 7; 7.5];
+D = [10; 8; 6; 12; 7];
 
 % Simulate hologram
 [holo,u0] = MSHoloSim(X,Y,Z,D,opts);
 
-%% Displaying simulations
+% Displaying simulation results
 S = opts.imSize;
 xx = (1:S)*dx; yy = (1:S)*dx;
 figure; subplot(1,3,1); imagesc(xx,yy,holo); axis image;
@@ -71,7 +75,7 @@ subplot(1,3,3); imagesc(xx,yy,angle(u0(S+1:2*S,S+1:2*S))); axis image;
 title('Optical field at hologram plane - phase'); xlabel \mum; ylabel \mum
 colormap gray;
 
-%% Reconstruction
+% Reconstruction with AS method
 out1 = propagate_AS_2d(holo,-opts.dist*1000-Z(1),opts.n(2),opts.lambda,dx);
 out1_wf = propagate_AS_2d(u0,-opts.dist*1000-Z(1),opts.n(2),opts.lambda,dx);
 out2 = propagate_AS_2d(holo,-opts.dist*1000-Z(2),opts.n(2),opts.lambda,dx);
@@ -79,7 +83,7 @@ out2_wf = propagate_AS_2d(u0,-opts.dist*1000-Z(2),opts.n(2),opts.lambda,dx);
 out3 = propagate_AS_2d(holo,-opts.dist*1000-Z(3),opts.n(2),opts.lambda,dx);
 out3_wf = propagate_AS_2d(u0,-opts.dist*1000-Z(3),opts.n(2),opts.lambda,dx);
 
-% Displaying reconstruction
+% Displaying reconstruction results
 figure;
 subplot(2,3,1); imagesc(xx,yy,abs(out1)); axis image;
 title(['Amplitude at Z = ',num2str(Z(1)),' \mum']); xlabel \mum; ylabel \mum
@@ -96,7 +100,7 @@ xlabel \mum; ylabel \mum
 subplot(2,3,6); imagesc(xx,yy,abs(out2_wf(S+1:2*S,S+1:2*S))); axis image;
 title(['Amplitude from optical field at Z = ',num2str(Z(2)),' \mum'])
 xlabel \mum; ylabel \mum; colormap gray
-
+%
 figure;
 subplot(2,3,1); imagesc(xx,yy,angle(out1)); axis image;
 title(['Phase at Z = ',num2str(Z(1)),' \mum']); xlabel \mum; ylabel \mum
@@ -114,7 +118,8 @@ subplot(2,3,6); imagesc(xx,yy,angle(out2_wf(S+1:2*S,S+1:2*S))); axis image;
 title(['Phase from optical field at Z = ',num2str(Z(2)),' \mum'])
 xlabel \mum; ylabel \mum; colormap gray
 
-%% 2. Simulating a set of holograms and using DarkTrack to recover objects 4D positions
+%% 2. Simulating a set of holograms by MSHoloSim and using DarkTrack to 
+% recover objects 4D positions
 clear
 close all
 clc
@@ -133,11 +138,12 @@ opts.lambda = 0.66; %(um)
 opts.SNR = 20;
 opts.imSize = 500; % (pix)
 opts.b_sig = 0.4;
+opts.ZF = 10; % in case of out of memory error increase the ZF parameter
 
 % Simulating holograms (it may last dozen minutes)
-[holo,u0] = MSHoloSim(X,Y,Z,D,opts);
+[holo,~] = MSHoloSim(X,Y,Z,D,opts);
 
-%% Show generated holograms
+% Show generated holograms
 dx = opts.pixSize/opts.mag;
 xx = (1:size(holo,2))*dx; yy = (1:size(holo,1))*dx;
 figure;
@@ -149,8 +155,8 @@ for tt = 1:NoH
     pause(0.1)
 end
 
-%% DarkTrack algorithm
-opts.propRange = [min(Z(:))-10, max(Z(:))+10]; % (um)
+% DarkTrack algorithm
+opts.propRange = [min(Z(:))-30, max(Z(:))+30]; % (um)
 opts.propStep = 1; % (um)
 adv.showTmpRes = 2; % additionally show the EDOF results during reconstruction
 
@@ -160,7 +166,7 @@ outZ = outZ + 2; % DarkTrack is finding a focus position slightly above the
 % microbead center. Slightly shift outZ positions to compensate this for
 % better comparison with ground truth
 
-%% Displaying results - EDOF vs CR
+% Displaying results - EDOF vs CR
 miEDOF = min(EDOF(:)); maEDOF = max(EDOF(:));
 miCR = min(CR(:)); maCR = max(CR(:));
 figure('units','normalized','outerposition',[0 0 1 1]);
@@ -168,13 +174,15 @@ for tt = 1:NoH
     subplot(1,2,1); imagesc(xx,yy,EDOF(:,:,tt),[miEDOF,maEDOF]); axis image; xlabel \mum;
     ylabel \mum; colormap gray
     title(['EDOF reconstruction ', num2str(tt),'/',num2str(NoH)])
+    set(gca,'fontsize',20)
     subplot(1,2,2); imagesc(xx,yy,CR(:,:,tt),[miCR,maCR]); axis image; xlabel \mum;
     ylabel \mum; colormap gray
-    title(['CR reconstruction at middle of propRange ', num2str(tt),'/',num2str(NoH)])
+    set(gca,'fontsize',20)
+    title(['CR reconstruction at the middle of propRange ', num2str(tt),'/',num2str(NoH)])
     pause(0.1)
+   
 end
-
-%% Displaying results - Found X,Y,Z,T positions vs ground truth positions
+% Displaying results - Found X,Y,Z,T positions vs ground truth positions
 figure; plot3(X(:),Y(:),Z(:),'.k'); hold on;
 C = [X(1,5),Y(1,5),Z(1,5)] ;   % center of circle
 R = D(1)/2;    % Radius of circle
@@ -201,8 +209,9 @@ clc
 close all
 
 % Load holograms and opts
-load('./Data/Data from article/SimulatedData/Data_Video1.mat');
-%% DarkTrack
+load('./Data/Data from article/SimulatedData/Data_Video1.mat'); clear u0
+
+% DarkTrack
 adv.showTmpRes = 2; % additionally show the EDOF results during reconstruction
 
 % DarkTrack algorithm
@@ -210,7 +219,8 @@ adv.showTmpRes = 2; % additionally show the EDOF results during reconstruction
 outZ = outZ + 1; % DarkTrack is finding a focus position slightly above the
 % microbead center. Slightly shift outZ positions to compensate this for
 % better comparison with ground truth
-%% Displaying results - EDOF vs CR
+
+% Displaying results - EDOF vs CR
 NoH = size(holo,3);
 dx = opts.pixSize/opts.mag;
 xx = (1:size(holo,2))*dx; yy = (1:size(holo,1))*dx;
@@ -227,7 +237,7 @@ for tt = 1:NoH
     pause(0.1)
 end
 
-%% Displaying results - Found X,Y,Z,T positions vs ground truth positions
+% Displaying results - Found X,Y,Z,T positions vs ground truth positions
 figure; plot3(X(:),Y(:),Z(:),'.k'); hold on;
 C = [X(1,5),Y(1,5),Z(1,5)] ;   % center of circle
 R = D(1)/2;    % Radius of circle
@@ -261,7 +271,7 @@ while hasFrame(mov)
     holo(:,:,t) = tmp(:,:,3);
 end
 
-%% DarkTrack algorithm
+% DarkTrack 
 % Load opts. When reconstructing your data, most of the opts are easy to
 % set basing on the knowledge of your system. Only opts.dist and
 % opts.propRange may be challenging - to set them properly we recommend to
@@ -271,10 +281,9 @@ load('./Data/Data from article/RealData/HumanSpermParameters.mat');
 adv.NoF = 50; % reconstruct only first 50 frames
 adv.showTmpRes = 2; % additionally show the EDOF results during reconstruction
 
-%% DarkTrack algorithm
 [outX,outY,outZ,EDOF,CR] = DarkTrack(holo,opts,adv);
 
-%% Displaying results - EDF vs CR
+% Displaying results - EDOF vs CR
 dx = opts.pixSize/opts.mag;
 xx = (1:size(holo,2))*dx; yy = (1:size(holo,1))*dx;
 miEDOF = min(EDOF(:)); maEDOF = max(EDOF(:));
@@ -291,7 +300,7 @@ for tt = 1:NoH
     pause(0.1)
 end
 
-%% Displaying results - Found X,Y,Z,T positions
+% Displaying results - Found X,Y,Z,T positions
 m = size(outX,1); if m>5; m=5; end
 for tt = 0:m
     figure;
@@ -313,7 +322,7 @@ end
 
 
 
-% Auxiliary functions
+%% Auxiliary functions
 function uout = propagate_AS_2d(uin,z,n0,lambda,dx)
 % Angular spectrum propagation method
 

@@ -36,8 +36,10 @@ function [holoSet,u0,obj2D,dz] = MSHoloSim(X,Y,Z,D,opts)
 %           (default 0.4)
 %       opts.red - generated object volume may be very large. When z
 %           dimension is larger than max(y,x)/2 reduce it to be equal
-%           max(y,x)/2 ?  red = 'y' - yes, red = 'n' - no, red = 'a' - ask
-%           me when this will happen (default opts.red = 'y')
+%           max(y,x)/opts.ZF ?  red = 'y' - yes, red = 'n' - no, red = 'a'
+%           - ask me when this will happen (default opts.red = 'y')
+%       opts.ZF - sampling of simulated volume in Z dim (object volume has 
+%           dimensions: imSize x imSize x imSize/ZF) (default opts.ZF = 2)
 %
 % Auxiliary drawings:
 %                          dist
@@ -76,7 +78,7 @@ function [holoSet,u0,obj2D,dz] = MSHoloSim(X,Y,Z,D,opts)
 %   Institute of Micromechanics and Photonics,
 %   Warsaw University of Technology, 02-525 Warsaw, Poland
 %
-% Last modified - 14.12.2021
+% Last modified - 09.06.2022
 % 
 % See the https://github.com/MRogalski96/DarkTrack for more info
 % 
@@ -98,6 +100,7 @@ if ~isfield(opts,'SNR'); SNR = 20; else; SNR = opts.SNR; end
 if ~isfield(opts,'imSize'); imSize = 500; else; imSize = opts.imSize; end
 if ~isfield(opts,'b_sig'); b_sig = 0.4; else; b_sig = opts.b_sig; end
 if ~isfield(opts,'red'); red = 'y'; else; red = opts.red; end
+if ~isfield(opts,'ZF'); ZF = 2; else; ZF = opts.ZF; end
 
 if length(imSize) == 1; imSize = [imSize,imSize]; end
 
@@ -119,18 +122,18 @@ Z_dim = max(Z(:))-min(Z(:))+max(D(:));
 
 % Ensure that the sampling in z direction is not to dense to save the
 % computational time
-if Z_dim/dz > max(imSize)/2 && (red == 'y' || red == 'a')
+if Z_dim/dz > max(imSize)/ZF && (red == 'y' || red == 'a')
     if red == 'a'
         warning(['The size of object volume is very large: ', ...
             num2str(imSize(2)),'x',num2str(imSize(1)),'x',...
             num2str(round(Z_dim/dz)),'. Reduce it to: ',...
             num2str(imSize(2)),'x',num2str(imSize(1)),'x',...
-            num2str(round(max(imSize)/2)),' ?'])
+            num2str(round(max(imSize)/ZF)),' ?'])
         red = input(' 1 - Yes / 0 - No = ');
         if red == 1; red = 'y'; end
     end
     if red == 'y'
-        dz = (Z_dim+1)/max(imSize)*2;
+        dz = (Z_dim+1)/max(imSize)*ZF;
     end
 end
 
@@ -207,6 +210,7 @@ for ff = 1:NoF
     
     disp(['Simulated: ',num2str(ff),'/',num2str(NoF),' frames'])
 end
+% memory
 end
 
 %% Auxiliary functions
@@ -261,6 +265,7 @@ for iz=1:Nz
     u = u.*kernelsp; 
  
 end
+% memory
 end
 
 
