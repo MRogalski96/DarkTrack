@@ -10,7 +10,7 @@ Our exemplary datasets may be downloaded here:<br>
 https://drive.google.com/drive/folders/1UNtZ3IeEX5ms_Vx85b0S685D-uipLe_l?usp=sharing
 
 ## How to cite
-[1] Mikołaj Rogalski, Jose Angel Picazo-Bueno, Julianna Winnik, Piotr Zdańkowski, Vicente Micó, Maciej Trusiak. "DarkTrack: a path across the dark-field for holographic 4D particle tracking under Gabor regime." 2021. Submitted
+M. Rogalski, J. A. Picazo-Bueno, J. Winnik, P. Zdańkowski, V. Micó, and M. Trusiak, “Accurate automatic object 4D tracking in digital in-line holographic microscopy based on computationally rendered dark fields,” Scientific Reports, vol. 12, no. 1, p. 12909, Dec. 2022, doi: 10.1038/s41598-022-17176-1.
 
 ## Created by
 Mikołaj Rogalski, <br>
